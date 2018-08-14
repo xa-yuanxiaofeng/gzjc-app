@@ -66,13 +66,8 @@ public class MainActivity extends AppCompatActivity {
         this.getData();
     }
 
-
     private boolean isScroll = true;
     private LeftListAdapter adapter;
-
-
-
-
 
     private String[] leftStr = new String[]{ "网络设备0","网络设备1", "网络设备2", "网络设备3", "网络设备4",
                                                 "网络设备5","网络设备6", "网络设备7", "网络设备8", "网络设备9"};
@@ -264,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
                 //第一步：创建HttpClient对象
                 HttpClient httpCient = new DefaultHttpClient();
                 //第二步：创建代表请求的对象,参数是访问的服务器地址
-                HttpGet httpGet = new HttpGet("http://192.168.1.4:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
+                HttpGet httpGet = new HttpGet("http://192.168.1.87:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
                 try {
                     //第三步：执行请求，获取服务器发还的相应对象
                     HttpResponse httpResponse = httpCient.execute(httpGet);
