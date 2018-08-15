@@ -6,6 +6,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
@@ -23,6 +26,9 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
@@ -73,7 +79,8 @@ public class MainActivity extends AppCompatActivity {
                                                 "网络设备5","网络设备6", "网络设备7", "网络设备8", "网络设备9"};
     private boolean[] flagArray = {true, false, false, false, false,
                                       false, false, false, false, false};
-    private String[][] rightStr = new String[][]{
+    private String[][] rightStr = new String[][]
+            {
             {"内存容量：99%", "CPU占用99%", "硬盘占用99%","硬盘占用99%"},
             {"网络流量：XX", "最大包：XXX", "日攻击次数："},
             {"内存容量：99%", "CPU占用99%", "硬盘占用99%"},
@@ -91,7 +98,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
         //去除App的标题栏
         if (getSupportActionBar() != null){
             getSupportActionBar().hide();
@@ -223,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
                             mRecyclerView.smoothScrollBy(100,0);
                         }
                         mRecyclerAdapter.notifyDataSetChanged();
+
                         return;
                     }
                 });
@@ -259,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                 //第一步：创建HttpClient对象
                 HttpClient httpCient = new DefaultHttpClient();
                 //第二步：创建代表请求的对象,参数是访问的服务器地址
-                HttpGet httpGet = new HttpGet("http://192.168.1.87:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
+                HttpGet httpGet = new HttpGet("http://192.168.48.250:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
                 try {
                     //第三步：执行请求，获取服务器发还的相应对象
                     HttpResponse httpResponse = httpCient.execute(httpGet);
@@ -291,8 +298,25 @@ public class MainActivity extends AppCompatActivity {
             super.handleMessage(msg);
             switch (msg.what) {
                 case SHOW_RESPONSE:
-                    String response = (String) msg.obj;
-                    dataContent.setText(response);
+                    try {
+                    //接收数据
+                    System.out.println(msg.obj);
+                    JSONObject response = new JSONObject((String) msg.obj);
+                     //接收的数据格式转换
+                     convertJsonToArray(response);
+                     //页面刷新
+                      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");// HH:mm:ss
+                    //获取当前时间
+                        Date date = new Date(System.currentTimeMillis());
+                        dataContent.setText("数据最新获取时间："+simpleDateFormat.format(date));
+                        //通知adapter数据更新
+                        adapter.notifyDataSetChanged();
+                        mRecyclerAdapter.notifyDataSetChanged();
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    // dataContent.setText(response);
                     break;
                 default:
                     break;
@@ -300,5 +324,44 @@ public class MainActivity extends AppCompatActivity {
         }
 
     };
+
+    /*
+    将接收的json格式 主机名：[{},{}...] 数据转为数组
+     */
+    private void convertJsonToArray( JSONObject response) throws JSONException {
+        LinkedList<String> left=new LinkedList<>();
+        LinkedList flag=new LinkedList();
+        LinkedList<JSONArray> right = new LinkedList<>();
+
+        Iterator<String> sIterator = response.keys();
+        while(sIterator.hasNext()){
+            // 获得key
+            String key = sIterator.next();
+            left.add(key);
+            flag.add(false);
+            // 根据key获得value, value也可以是JSONObject,JSONArray,使用对应的参数接收即可
+            JSONArray value = response.getJSONArray(key);
+            right.add(value);
+        }
+        //左边数组
+        this.leftStr = new String[left.size()];
+        left.toArray(this.leftStr);
+        //标识位
+        this.flagArray = new boolean[left.size()];
+        for(boolean a:flagArray){
+            a=false;
+        }
+        flagArray[0]=true;
+
+        //右边数组
+        this.rightStr = new String[right.size()][];
+        for(int i=0 ;i<right.size();i++){
+            JSONArray temp=((JSONArray)right.get(i));
+            this.rightStr[i]=new String[temp.length()];
+            for(int j=0;j<temp.length();j++){
+                this.rightStr[i][j] =temp.get(j).toString();
+            }
+        }
+    }
 }
 
