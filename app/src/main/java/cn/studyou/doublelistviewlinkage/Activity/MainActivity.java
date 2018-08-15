@@ -74,20 +74,13 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isScroll = true;
     private LeftListAdapter adapter;
+    MainSectionedAdapter sectionedAdapter;
 
-    private String[] leftStr = new String[]{ "网络设备0","网络设备1", "网络设备2", "网络设备3", "网络设备4",
-                                                "网络设备5","网络设备6", "网络设备7", "网络设备8", "网络设备9"};
-    private boolean[] flagArray = {true, false, false, false, false,
-                                      false, false, false, false, false};
+    private String[] leftStr = new String[]{ "网络设备0","网络设备1", "网络设备2", "网络设备3"};
+    private boolean[] flagArray = {true, false, false, false};
     private String[][] rightStr = new String[][]
             {
             {"内存容量：99%", "CPU占用99%", "硬盘占用99%","硬盘占用99%"},
-            {"网络流量：XX", "最大包：XXX", "日攻击次数："},
-            {"内存容量：99%", "CPU占用99%", "硬盘占用99%"},
-            {"网络流量：XX", "最大包：XXX", "日攻击次数："},
-            {"内存容量：99%", "CPU占用99%", "硬盘占用99%"},
-            {"网络流量：XX", "最大包：XXX", "日攻击次数："},
-            {"内存容量：99%", "CPU占用99%", "硬盘占用99%"},
             {"网络流量：XX", "最大包：XXX", "日攻击次数："},
             {"内存容量：99%", "CPU占用99%", "硬盘占用99%"},
             {"网络流量：XX", "最大包：XXX", "日攻击次数："}
@@ -103,10 +96,7 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
         pinnedListView = (PinnedHeaderListView) findViewById(R.id.pinnedListView);
-        final MainSectionedAdapter sectionedAdapter = new MainSectionedAdapter(this, leftStr, rightStr);
-        pinnedListView.setAdapter(sectionedAdapter);
-        adapter = new LeftListAdapter(this, leftStr, flagArray);
-        leftListview.setAdapter(adapter);
+        this.setData();;
         leftListview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
@@ -266,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
                 //第一步：创建HttpClient对象
                 HttpClient httpCient = new DefaultHttpClient();
                 //第二步：创建代表请求的对象,参数是访问的服务器地址
-                HttpGet httpGet = new HttpGet("http://192.168.48.250:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
+                HttpGet httpGet = new HttpGet("http://192.168.3.14:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
                 try {
                     //第三步：执行请求，获取服务器发还的相应对象
                     HttpResponse httpResponse = httpCient.execute(httpGet);
@@ -292,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
 
     //新建Handler的对象，在这里接收Message，然后更新TextView控件的内容
     @SuppressLint("HandlerLeak")
-    private Handler handler = new Handler() {
+    private MyHandler handler = new MyHandler(this) {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
@@ -310,9 +300,7 @@ public class MainActivity extends AppCompatActivity {
                         Date date = new Date(System.currentTimeMillis());
                         dataContent.setText("数据最新获取时间："+simpleDateFormat.format(date));
                         //通知adapter数据更新
-                        adapter.notifyDataSetChanged();
-                        mRecyclerAdapter.notifyDataSetChanged();
-
+                        this.a.setData();
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -362,6 +350,24 @@ public class MainActivity extends AppCompatActivity {
                 this.rightStr[i][j] =temp.get(j).toString();
             }
         }
+    }
+    /*
+    数组数据变化后，重新构造适配器
+     */
+    public  void setData(){
+        sectionedAdapter = new MainSectionedAdapter(this, leftStr, rightStr);
+        pinnedListView.setAdapter(sectionedAdapter);
+        adapter = new LeftListAdapter(this, leftStr, flagArray);
+        leftListview.setAdapter(adapter);
+    }
+
+    class MyHandler extends Handler{
+        public MainActivity a;
+        public MyHandler(MainActivity a){
+            super();
+            this.a =a;
+        }
+
     }
 }
 
