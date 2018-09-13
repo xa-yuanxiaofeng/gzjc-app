@@ -17,6 +17,7 @@ import cn.studyou.doublelistviewlinkage.R;
  * 创建：王杰
  * 创建时间：16/4/14
  * 邮箱：w489657152@gmail.com
+ * 由header和section上下两部分组成
  */
 public class MainSectionedAdapter extends SectionedBaseAdapter {
 

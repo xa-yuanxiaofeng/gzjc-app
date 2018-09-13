@@ -46,38 +46,42 @@ import cn.studyou.doublelistviewlinkage.View.PinnedHeaderListView;
 public class MainActivity extends AppCompatActivity {
 
     public static final int SHOW_RESPONSE = 0;
-    //滚动定时器
-    private Timer t;
-    @Bind(R.id.recyclerView)
-    RecyclerView mRecyclerView;
 
-    RecycleAdapter mRecyclerAdapter;
-    List list;
+    //数据读取定时器
+    private Timer readDataTimer;
 
+    //数据读取时间显示视图
+    @Bind(R.id.snatchTime)
+    TextView readDataTime;
+
+    //滚动视图
+    @Bind(R.id.warningView)
+    TextView warningView;
+
+    //报警数据
+    String warningData="";
+
+    //左列表
     @Bind(R.id.left_listview)
     ListView leftListview;
 
     @Bind(R.id.pinnedListView)
     PinnedHeaderListView pinnedListView;
 
-    @Bind(R.id.dataContent)
-    TextView dataContent;
 
-    //读取数据
-    @Bind(R.id.getData)
-    Button mGetDataButton;
 
-    @OnClick(R.id.getData)
-    public void onLoginClick(Button button) {
-        this.getData();
-    }
-
+    //是否在滚动
     private boolean isScroll = true;
+    //左列数据适配器
     private LeftListAdapter adapter;
+    //?
     MainSectionedAdapter sectionedAdapter;
 
+    //左列数据
     private String[] leftStr = new String[]{ "网络设备0","网络设备1", "网络设备2", "网络设备3"};
+    //？
     private boolean[] flagArray = {true, false, false, false};
+    //右列数据
     private String[][] rightStr = new String[][]
             {
             {"内存容量：99%", "CPU占用99%", "硬盘占用99%","硬盘占用99%"},
@@ -177,56 +181,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //设定数值
-        list= new LinkedList<String>();
-        list.add("故障监测系统");
-        list.add("***");
-        list.add("数据库服务器内存溢出");
-        list.add("***");
-        list.add("路由器被攻击");
-        list.add("***");
-        list.add("存储阵列满了");
-        list.add("***");
-        list.add("收费服务器内存占用99%");
-        list.add("***");
-        list.add("防火墙被攻击");
-        list.add("***");
-        list.add("机房温度48°");
-        list.add("***");
         //定义layoutManager
         LinearLayoutManager llm = new LinearLayoutManager(this);
         llm.setOrientation(LinearLayoutManager.HORIZONTAL);
-        mRecyclerView =(RecyclerView) findViewById(R.id.recyclerView);
-        mRecyclerView.setLayoutManager(llm);
 
-        //创建适配器
-        mRecyclerAdapter = new RecycleAdapter(this,list);
-        //给循环视图设定适配器
-        mRecyclerView.setAdapter(mRecyclerAdapter);
-        //滚动
-
-        t = new Timer();
-        t.schedule(new TimerTask() {
+        //数据读取定时器
+        readDataTimer = new Timer();
+        readDataTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isSlideToBottom(mRecyclerView)) {
-                            mRecyclerView.smoothScrollToPosition(0);
-                        }
-                        else{
-                            mRecyclerView.smoothScrollBy(100,0);
-                        }
-                        mRecyclerAdapter.notifyDataSetChanged();
-
-                        return;
-                    }
-                });
+                getData() ;
             }
-        }, 500, 500);
-
-
+        }, 0, 10*1000);
     }
 
     @Override
@@ -246,7 +212,6 @@ public class MainActivity extends AppCompatActivity {
     //方法：发送网络请求，获取百度首页的数据。在里面开启线程
     private void getData() {
         new Thread(new Runnable() {
-
             @Override
             public void run() {
 
@@ -256,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
                 //第一步：创建HttpClient对象
                 HttpClient httpCient = new DefaultHttpClient();
                 //第二步：创建代表请求的对象,参数是访问的服务器地址
-                HttpGet httpGet = new HttpGet("http://192.168.3.14:8082/gzjc-v1/EchoServlet?mac=38-59-F9-DD-CE-A8");
+                HttpGet httpGet = new HttpGet("http://192.168.8.102:8082/EchoServlet");
                 try {
                     //第三步：执行请求，获取服务器发还的相应对象
                     HttpResponse httpResponse = httpCient.execute(httpGet);
@@ -268,19 +233,17 @@ public class MainActivity extends AppCompatActivity {
                         message.what = SHOW_RESPONSE;
                         message.obj = response.toString();
                     }
-
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
                 handler.sendMessage(message);
-
             }
         }).start();//这个start()方法不要忘记了
 
     }
 
-    //新建Handler的对象，在这里接收Message，然后更新TextView控件的内容
+    //新建Handler的对象，在这里接收Message，然后更新TextView控件的内容，并显示报警数据
     @SuppressLint("HandlerLeak")
     private MyHandler handler = new MyHandler(this) {
         @Override
@@ -294,13 +257,14 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject response = new JSONObject((String) msg.obj);
                      //接收的数据格式转换
                      convertJsonToArray(response);
-                     //页面刷新
+                        //设置数据获取时间
                       SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");// HH:mm:ss
-                    //获取当前时间
-                        Date date = new Date(System.currentTimeMillis());
-                        dataContent.setText("数据最新获取时间："+simpleDateFormat.format(date));
+                      Date date = new Date(System.currentTimeMillis());
+                      readDataTime.setText("数据新获时间："+simpleDateFormat.format(date));
+                      //报警数据,50个字节以上充满行，则滚动
+                      //warningView.setText(warningData);
                         //通知adapter数据更新
-                        this.a.setData();
+                      this.a.setData();
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
